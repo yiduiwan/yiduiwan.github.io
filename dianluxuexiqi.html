@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>典型数字与模拟电路图播放器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #10131a;
+    color: #e8ecf3;
+    display: flex; flex-direction: column;
+  }
+  header {
+    padding: 10px 18px;
+    background: #171c26;
+    border-bottom: 1px solid #2a3242;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
+  header span { font-size: 12px; color: #8b95a7; }
+  main { flex: 1; display: flex; min-height: 0; }
+  .panel {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    border-right: 1px solid #2a3242;
+  }
+  .panel:last-child { border-right: none; }
+  .p-head {
+    padding: 8px 12px; background: #1a2130; font-size: 13px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .p-head .label { color: #9fb3d9; }
+  .p-head .name {
+    flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; color: #cfe0ff; font-weight: 400; font-size: 12px;
+  }
+  .stage {
+    flex: 1; min-height: 0; background: #0b0e14; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stage img {
+    max-width: 96%; max-height: 96%; object-fit: contain;
+    border-radius: 6px; box-shadow: 0 4px 24px rgba(0,0,0,.45);
+    background: #fff;
+    transition: opacity .25s ease;
+  }
+  .stage img.hidden { opacity: 0; }
+  .stage .hint { color: #5a6579; font-size: 13px; }
+  .p-foot {
+    padding: 10px 12px; background: #171c26; border-top: 1px solid #2a3242;
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+  }
+  button {
+    font-family: inherit; font-size: 13px; padding: 7px 22px; border-radius: 6px;
+    border: 1px solid #3a465e; background: #232c3d; color: #dfe7f5; cursor: pointer;
+    transition: background .15s, transform .05s;
+  }
+  button:hover { background: #2e3a52; }
+  button:active { transform: scale(.97); }
+  button.play { background: #1f7a4d; border-color: #2a9d66; }
+  button.play:hover { background: #26915b; }
+  button.pause { background: #8a5a1e; border-color: #b57a28; }
+  button.pause:hover { background: #a06a24; }
+  .p-foot .meta { font-size: 11px; color: #76819a; }
+  .badge {
+    font-size: 11px; color: #8b95a7; background: #202838;
+    border-radius: 10px; padding: 2px 8px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>典型数字与模拟电路图播放器</h1>
+  <span id="total">共 501 张</span>
+  <span class="badge">两个区域可独立播放</span>
+</header>
+<main>
+  <section class="panel" id="panelA">
+    <div class="p-head">
+      <span class="label">区域 A</span>
+      <span class="name" id="nameA">—</span>
+    </div>
+    <div class="stage" id="stageA">
+      <img id="imgA" alt="">
+      <span class="hint" id="hintA">点击“开始”随机播放</span>
+    </div>
+    <div class="p-foot">
+      <button class="play" id="startA">开始</button>
+      <button class="pause" id="pauseA">暂停</button>
+      <span class="meta" id="metaA">0/0</span>
+    </div>
+  </section>
+  <section class="panel" id="panelB">
+    <div class="p-head">
+      <span class="label">区域 B</span>
+      <span class="name" id="nameB">—</span>
+    </div>
+    <div class="stage" id="stageB">
+      <img id="imgB" alt="">
+      <span class="hint" id="hintB">点击“开始”随机播放</span>
+    </div>
+    <div class="p-foot">
+      <button class="play" id="startB">开始</button>
+      <button class="pause" id="pauseB">暂停</button>
+      <span class="meta" id="metaB">0/0</span>
+    </div>
+  </section>
+</main>
+<script>
+const IMAGES = ["001_电阻串联电路.png", "002_电阻并联电路.png", "003_电阻分压电路.png", "004_电位器分压电路.png", "005_惠斯通电桥.png", "006_电容充电电路.png", "007_电容放电电路.png", "008_电容串联电路.png", "009_电容并联电路.png", "010_电感电路.png", "011_变压器电路.png", "012_自耦变压器电路.png", "013_串联谐振电路.png", "014_并联谐振电路.png", "015_RC低通滤波器.png", "016_RC高通滤波器.png", "017_RC带通滤波器.png", "018_双T带阻滤波器.png", "019_LC低通滤波器.png", "020_LC带通滤波器.png", "021_π型滤波器.png", "022_T型滤波器.png", "023_二极管单向导电.png", "024_负向钳位电路.png", "025_正向钳位电路.png", "026_二极管上限幅电路.png", "027_二极管下限幅电路.png", "028_双向限幅电路.png", "029_稳压管稳压电路.png", "030_LED限流驱动电路.png", "031_光电二极管检测电路.png", "032_二极管与门.png", "033_二极管或门.png", "034_半波整流电路.png", "035_全波整流电路.png", "036_桥式整流电路.png", "037_半波整流电容滤波.png", "038_桥式整流电容滤波.png", "039_二倍压整流电路.png", "040_三倍压整流电路.png", "041_多级倍压电路.png", "042_半波精密整流电路.png", "043_共射极基本放大电路.png", "044_固定偏置共射放大电路.png", "045_分压偏置共射放大电路.png", "046_集电极反馈偏置共射放大.png", "047_共集电极放大电路.png", "048_共基极放大电路.png", "049_两级阻容耦合放大电路.png", "050_变压器耦合放大电路.png", "051_直接耦合两级放大电路.png", "052_达林顿管电路.png", "053_互补复合管电路.png", "054_基本差分放大电路.png", "055_长尾差分放大电路.png", "056_恒流源差分放大电路.png", "057_共射共基级联放大.png", "058_共集共射级联放大.png", "059_乙类推挽功率放大电路.png", "060_甲乙类互补推挽电路.png", "061_OTL功率放大电路.png", "062_OCL功率放大电路.png", "063_电压并联负反馈放大电路.png", "064_电压串联负反馈放大电路.png", "065_电流并联负反馈放大电路.png", "066_电流串联负反馈放大电路.png", "067_三极管开关电路.png", "068_光电三极管开关电路.png", "069_继电器驱动电路.png", "070_蜂鸣器驱动电路.png", "071_直流电机驱动电路.png", "072_互补推挽输出级.png", "073_H桥电机驱动电路.png", "074_三极管恒流源电路.png", "075_镜像电流源.png", "076_威尔逊电流源.png", "077_微电流源电路.png", "078_稳压管偏置放大电路.png", "079_自举射极跟随器.png", "080_有源负载共射放大.png", "081_射极输出驱动电路.png", "082_光耦开关电路.png", "083_触摸开关电路.png", "084_声控开关电路.png", "085_光控继电器电路.png", "086_延时接通电路.png", "087_单管LC振荡电路.png", "088_变压器反馈振荡电路.png", "089_电感三点式振荡电路.png", "090_电容三点式振荡电路.png", "091_克拉波振荡电路.png", "092_西勒振荡电路.png", "093_石英晶体振荡电路.png", "094_串联型晶振电路.png", "095_皮尔斯振荡电路.png", "096_三节RC移相振荡电路.png", "097_文氏桥振荡电路.png", "098_双T选频振荡电路.png", "099_单结管张弛振荡电路.png", "100_互补多谐振荡电路.png", "101_无稳态多谐振荡电路.png", "102_单稳态电路.png", "103_双稳态电路.png", "104_施密特触发器电路.png", "105_运放方波发生器.png", "106_运放三角波发生器.png", "107_运放锯齿波发生器.png", "108_三角波方波发生器.png", "109_压控振荡器电路.png", "110_晶闸管半波整流电路.png", "111_晶闸管全波可控整流.png", "112_双向可控硅调光电路.png", "113_单结管触发电路.png", "114_RC移相触发电路.png", "115_交流过零检测电路.png", "116_热敏电阻测温电路.png", "117_热电偶测温电路.png", "118_PT100电桥测温电路.png", "119_光敏电阻光控电路.png", "120_光电三极管光控电路.png", "121_红外发射电路.png", "122_红外接收电路.png", "123_超声波发射电路.png", "124_超声波接收电路.png", "125_驻极体话筒放大电路.png", "126_扬声器驱动电路.png", "127_水位检测电路.png", "128_湿度检测电路.png", "129_电容式接近开关.png", "130_电感式接近开关.png", "131_振动检测电路.png", "132_火焰检测电路.png", "133_气体检测电路.png", "134_应变片测量电桥.png", "135_反相放大器.png", "136_同相放大器.png", "137_电压跟随器.png", "138_反相求和放大器.png", "139_同相求和放大器.png", "140_差动放大器.png", "141_减法器电路.png", "142_三运放仪表放大器.png", "143_积分器电路.png", "144_微分器电路.png", "145_一阶有源低通滤波器.png", "146_一阶有源高通滤波器.png", "147_二阶有源低通滤波器.png", "148_多路反馈低通滤波器.png", "149_二阶有源高通滤波器.png", "150_二阶有源带通滤波器.png", "151_双T有源陷波滤波器.png", "152_状态变量滤波器.png", "153_四阶巴特沃斯低通滤波器.png", "154_基本比较器.png", "155_迟滞比较器.png", "156_窗口比较器.png", "157_过零比较器.png", "158_电平检测器.png", "159_半波精密整流电路.png", "160_全波精密整流电路.png", "161_峰值检测器.png", "162_采样保持电路.png", "163_电压电流转换器.png", "164_电流电压转换器.png", "165_负阻抗变换器.png", "166_对数放大器.png", "167_反对数放大器.png", "168_模拟乘法器电路.png", "169_模拟除法器电路.png", "170_平方根电路.png", "171_运放恒流源.png", "172_精密基准电压源.png", "173_运放串联稳压电路.png", "174_运放并联稳压电路.png", "175_电流检测放大器.png", "176_桥式放大器.png", "177_应变电桥放大电路.png", "178_热敏电桥放大电路.png", "179_光强检测放大电路.png", "180_电池电压监视电路.png", "181_窗口电压检测电路.png", "182_超前相移电路.png", "183_滞后相移电路.png", "184_全通滤波电路.png", "185_运放文氏桥振荡器.png", "186_运放移相振荡器.png", "187_正交振荡器.png", "188_运放方波发生器.png", "189_运放三角波发生器.png", "190_运放锯齿波发生器.png", "191_三角波-方波发生器.png", "192_运放压控振荡器.png", "193_电压频率转换器.png", "194_频率电压转换器.png", "195_运放单稳态电路.png", "196_运放双稳态电路.png", "197_运放施密特触发器.png", "198_脉冲展宽电路.png", "199_音调发生器.png", "200_电子蜂鸣器电路.png", "201_话筒前置放大器.png", "202_耳机功放电路.png", "203_低音提升电路.png", "204_音调控制电路.png", "205_图示均衡器电路.png", "206_峰值保持电路.png", "207_平均值电路.png", "208_加权求和电路.png", "209_差分积分器.png", "210_有源整流桥.png", "211_电流求和电路.png", "212_电压求和电路.png", "213_缓冲器阵列.png", "214_双运放仪器放大器.png", "215_单位增益差分电路.png", "216_高输入阻抗放大器.png", "217_低漂移放大器.png", "218_功率运放电路.png", "219_带宽扩展电路.png", "220_三端稳压器电路.png", "221_负压三端稳压器电路.png", "222_LM317可调稳压电路.png", "223_双电源稳压电路.png", "224_TL431精密基准电路.png", "225_TL431可调稳压电路.png", "226_分立串联稳压电路.png", "227_稳压管并联稳压电路.png", "228_精密基准源.png", "229_降压开关电源电路.png", "230_升压开关电源电路.png", "231_反激变换器电路.png", "232_正激变换器电路.png", "233_推挽变换器电路.png", "234_半桥变换器电路.png", "235_全桥变换器电路.png", "236_电荷泵倍压电路.png", "237_电荷泵反相电路.png", "238_自举升压电路.png", "239_开关电容变换器.png", "240_5V转3.3V电路.png", "241_电池升压电路.png", "242_太阳能充电电路.png", "243_锂电池充电电路.png", "244_镍氢电池充电电路.png", "245_浮充电路.png", "246_过压保护电路.png", "247_欠压保护电路.png", "248_过流保护电路.png", "249_反极性保护电路.png", "250_浪涌保护电路.png", "251_ESD保护电路.png", "252_EMI滤波电路.png", "253_π型电源滤波电路.png", "254_工频变压器电源电路.png", "255_容阻降压电源电路.png", "256_容阻降压稳压电路.png", "257_应急照明电源电路.png", "258_方波逆变器电路.png", "259_正弦波逆变器电路.png", "260_直流电机PWM调速电路.png", "261_软启动电路.png", "262_浪涌电流限制电路.png", "263_掉电检测电路.png", "264_超级电容后备电路.png", "265_二输入与门.png", "266_三输入与门.png", "267_四输入与门.png", "268_二输入或门.png", "269_三输入或门.png", "270_非门.png", "271_二输入与非门.png", "272_三输入与非门.png", "273_二输入或非门.png", "274_三输入或非门.png", "275_异或门.png", "276_同或门.png", "277_缓冲器.png", "278_三态缓冲器.png", "279_传输门.png", "280_施密特反相器.png", "281_施密特与非门.png", "282_与或非门.png", "283_与或门.png", "284_CMOS反相器电路.png", "285_CMOS与非门电路.png", "286_CMOS或非门电路.png", "287_TTL与非门电路.png", "288_二极管-三极管逻辑电路.png", "289_边沿检测电路.png", "290_按键消抖电路.png", "291_三态输出总线电路.png", "292_半加器电路.png", "293_全加器电路.png", "294_半减器电路.png", "295_全减器电路.png", "296_四位加法器电路.png", "297_串行进位加法器电路.png", "298_加法器实现减法电路.png", "299_BCD加法器电路.png", "300_8-3线编码器电路.png", "301_优先编码器电路.png", "302_BCD编码器电路.png", "303_3-8线译码器电路.png", "304_2-4线译码器电路.png", "305_七段显示译码器电路.png", "306_译码器驱动数码管电路.png", "307_四选一数据选择器电路.png", "308_八选一数据选择器电路.png", "309_数据分配器电路.png", "310_一位数值比较器电路.png", "311_四位比较器电路.png", "312_奇偶校验器电路.png", "313_奇偶生成器电路.png", "314_二位乘法器电路.png", "315_译码器实现逻辑函数.png", "316_选择器实现逻辑函数.png", "317_二进制-格雷码转换电路.png", "318_BCD-余三码转换电路.png", "319_多路报警编码电路.png", "320_三输入多数表决器.png", "321_抢答器组合逻辑.png", "322_交通灯控制逻辑.png", "323_译码驱动继电器电路.png", "324_键盘编码器电路.png", "325_三态总线接口电路.png", "326_双向总线收发电路.png", "327_奇偶校验传输电路.png", "328_校验错误指示电路.png", "329_编码器级联电路.png", "330_译码器扩展电路.png", "331_选择器级联电路.png", "332_比较器级联电路.png", "333_加法器级联电路.png", "334_译码器实现全加器.png", "335_BCD-七段显示接口.png", "336_组合逻辑竞争冒险消除.png", "337_RS锁存器电路.png", "338_与非门RS锁存器.png", "339_门控RS锁存器.png", "340_D锁存器电路.png", "341_边沿D触发器.png", "342_JK触发器.png", "343_T触发器.png", "344_T′触发器.png", "345_主从RS触发器.png", "346_主从JK触发器.png", "347_异步置位复位D触发器.png", "348_四位移位寄存器.png", "349_双向移位寄存器.png", "350_串入并出寄存器.png", "351_并入串出寄存器.png", "352_环形计数器.png", "353_扭环形计数器.png", "354_约翰逊计数器.png", "355_三位异步二进制计数器.png", "356_异步十进制计数器.png", "357_四位同步二进制计数器.png", "358_同步十进制计数器.png", "359_模5计数器.png", "360_模12计数器.png", "361_模60计数器.png", "362_可逆计数器.png", "363_加减法计数器.png", "364_二分频器.png", "365_十分频器.png", "366_十六分频器.png", "367_级联分频器.png", "368_序列检测器电路.png", "369_移位型序列检测器.png", "370_按键消抖时序电路.png", "371_单脉冲发生器.png", "372_脉冲同步器.png", "373_格雷码计数器.png", "374_LFSR伪随机序列.png", "375_数字秒表电路.png", "376_定时器电路.png", "377_频率计电路框图.png", "378_地址计数器.png", "379_电子锁时序电路.png", "380_流水灯控制器.png", "381_彩灯控制器.png", "382_循环移位寄存器.png", "383_计数器分频链.png", "384_数字频率合成器.png", "385_锁相环基本框图.png", "386_数字锁相环.png", "387_状态机示例电路.png", "388_摩尔斯电码发生器.png", "389_单稳态触发器.png", "390_施密特触发整形电路.png", "391_门电路多谐振荡器.png", "392_555无稳态多谐振荡器.png", "393_555占空比可调振荡器.png", "394_555无稳态倍频振荡器.png", "395_555单稳态触发器.png", "396_555可重触发单稳态.png", "397_555施密特触发器.png", "398_555施密特整形电路.png", "399_555脉宽调制器.png", "400_555压控振荡器.png", "401_555频率可调振荡器.png", "402_555双音报警器.png", "403_555音乐门铃.png", "404_555电子门铃.png", "405_555闪光灯电路.png", "406_555灯闪烁控制.png", "407_555呼吸灯电路.png", "408_555触摸开关电路.png", "409_555水位报警器.png", "410_555红外报警器.png", "411_555光控报警器.png", "412_555声控报警器.png", "413_555温度报警器.png", "414_555湿敏报警器.png", "415_555电子琴电路.png", "416_555变调门铃.png", "417_555电子蜂鸣器.png", "418_555继电器驱动电路.png", "419_555电动机控制电路.png", "420_555直流电机调速.png", "421_555步进电机驱动.png", "422_555数字电压表框图.png", "423_555频率计电路.png", "424_555秒脉冲发生器.png", "425_555时钟信号源.png", "426_555光控延时灯.png", "427_R-2R梯形DAC电路.png", "428_权电阻DAC电路.png", "429_倒T型电阻网络DAC.png", "430_PWM型DAC电路.png", "431_双积分型ADC框图.png", "432_逐次逼近型ADC框图.png", "433_并行比较型ADC框图.png", "434_V·F转换电路.png", "435_F·V转换电路.png", "436_采样保持电路.png", "437_模拟开关采样保持.png", "438_同步采样保持电路.png", "439_多路模拟开关.png", "440_多路数据采集系统框图.png", "441_遥测数据采集电路.png", "442_RAM存储器电路.png", "443_ROM只读存储器.png", "444_EPROM存储器.png", "445_EEPROM存储器.png", "446_SRAM存储单元.png", "447_DRAM存储单元.png", "448_FIFO缓冲器.png", "449_RAM读写控制电路.png", "450_地址译码存储系统.png", "451_存储器扩展电路.png", "452_微处理器总线接口.png", "453_I·O接口电路.png", "454_串行接口电路.png", "455_并行接口电路.png", "456_LED显示驱动电路.png", "457_LCD显示接口电路.png", "458_点阵显示驱动电路.png", "459_数码管动态扫描电路.png", "460_键盘扫描接口电路.png", "461_I²C总线接口电路.png", "462_SPI总线接口电路.png", "463_CAN总线接口电路.png", "464_USB接口电路.png", "465_RS232接口电路.png", "466_电平转换接口电路.png", "467_光耦隔离接口电路.png", "468_继电器隔离驱动电路.png", "469_晶振时钟电路.png", "470_RC时钟电路.png", "471_数字电源去耦电路.png", "472_数字地模拟地分离电路.png", "473_RC上电复位电路.png", "474_按键复位电路.png", "475_看门狗复位电路.png", "476_双路电源供电电路.png", "477_数字电路电源电路.png", "478_FPGA开发板电源.png", "479_电平检测电路.png", "480_数字输入保护电路.png", "481_施密特输入缓冲电路.png", "482_LED指示灯电路.png", "483_数码管静态显示电路.png", "484_矩阵键盘电路.png", "485_独立按键电路.png", "486_拨码开关电路.png", "487_光电编码器接口.png", "488_霍尔传感器接口.png", "489_温度传感器接口.png", "490_红外接收电路.png", "491_红外发射电路.png", "492_超声波测距电路.png", "493_光敏检测电路.png", "494_热释电红外检测电路.png", "495_振动检测电路.png", "496_磁场检测电路.png", "497_电机H桥驱动电路.png", "498_舵机控制电路.png", "499_直流电机驱动电路.png", "500_步进电机驱动电路.png", "501_数字功放电路.png"];
+const TOTAL = IMAGES.length;
+document.getElementById('total').textContent = '共 ' + TOTAL + ' 张';
+
+function makePanel(prefix) {
+  const img = document.getElementById('img' + prefix);
+  const hint = document.getElementById('hint' + prefix);
+  const nameEl = document.getElementById('name' + prefix);
+  const metaEl = document.getElementById('meta' + prefix);
+  const startBtn = document.getElementById('start' + prefix);
+  const pauseBtn = document.getElementById('pause' + prefix);
+  let timer = null;
+  let current = null;
+  let played = 0;
+
+  function show(i) {
+    current = i;
+    played++;
+    nameEl.textContent = IMAGES[i];
+    metaEl.textContent = played + '/' + TOTAL;
+    img.onload = function () { img.classList.remove('hidden'); };
+    img.classList.add('hidden');
+    img.src = IMAGES[i];
+    if (hint) hint.style.display = 'none';
+  }
+
+  function randomPick() {
+    let i = Math.floor(Math.random() * TOTAL);
+    if (TOTAL > 1 && i === current) i = (i + 1) % TOTAL;
+    return i;
+  }
+
+  function start() {
+    if (timer) return;
+    show(randomPick());
+    timer = setInterval(function () { show(randomPick()); }, 2000);
+    startBtn.disabled = true;
+  }
+
+  function pause() {
+    if (!timer) return;
+    clearInterval(timer);
+    timer = null;
+    startBtn.disabled = false;
+  }
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', pause);
+  img.addEventListener('click', function () { if (timer) show(randomPick()); });
+}
+
+makePanel('A');
+makePanel('B');
+</script>
+</body>
+</html>
