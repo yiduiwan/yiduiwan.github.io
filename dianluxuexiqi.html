@@ -36,6 +36,7 @@
     flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; color: #cfe0ff; font-weight: 400; font-size: 12px;
   }
+  .p-head .loading { color: #ffb86b; font-size: 11px; font-weight: 400; }
   .stage {
     flex: 1; min-height: 0; background: #0b0e14; position: relative;
     display: flex; align-items: center; justify-content: center;
@@ -81,6 +82,7 @@
     <div class="p-head">
       <span class="label">区域 A</span>
       <span class="name" id="nameA">—</span>
+      <span class="loading" id="loadA" style="display:none">加载中…</span>
     </div>
     <div class="stage" id="stageA">
       <img id="imgA" alt="">
@@ -96,6 +98,7 @@
     <div class="p-head">
       <span class="label">区域 B</span>
       <span class="name" id="nameB">—</span>
+      <span class="loading" id="loadB" style="display:none">加载中…</span>
     </div>
     <div class="stage" id="stageB">
       <img id="imgB" alt="">
@@ -118,21 +121,37 @@ function makePanel(prefix) {
   const hint = document.getElementById('hint' + prefix);
   const nameEl = document.getElementById('name' + prefix);
   const metaEl = document.getElementById('meta' + prefix);
+  const loadEl = document.getElementById('load' + prefix);
   const startBtn = document.getElementById('start' + prefix);
   const pauseBtn = document.getElementById('pause' + prefix);
   let timer = null;
   let current = null;
   let played = 0;
+  let busy = false; // 正在加载图片时置 true，防止下一张覆盖导致空白
 
   function show(i) {
+    if (busy) return; // 上一张还没加载完，本次切换先跳过（不会跳图，只是延后）
+    busy = true;
     current = i;
     played++;
     nameEl.textContent = IMAGES[i];
     metaEl.textContent = played + '/' + TOTAL;
-    img.onload = function () { img.classList.remove('hidden'); };
-    img.classList.add('hidden');
-    img.src = IMAGES[i];
     if (hint) hint.style.display = 'none';
+    if (loadEl) loadEl.style.display = 'inline';
+    // 先预加载，加载完成才真正显示，旧图保留到新图就绪
+    const p = new Image();
+    p.onload = function () {
+      img.src = p.src; // 已入缓存，立即显示
+      img.classList.remove('hidden');
+      busy = false;
+      if (loadEl) loadEl.style.display = 'none';
+    };
+    p.onerror = function () { // 图片损坏或不存在 → 自动换下一张
+      busy = false;
+      if (loadEl) loadEl.style.display = 'none';
+      if (timer) show(randomPick());
+    };
+    p.src = IMAGES[i];
   }
 
   function randomPick() {
@@ -144,7 +163,7 @@ function makePanel(prefix) {
   function start() {
     if (timer) return;
     show(randomPick());
-    timer = setInterval(function () { show(randomPick()); }, 2000);
+    timer = setInterval(function () { show(randomPick()); }, 3000);
     startBtn.disabled = true;
   }
 
