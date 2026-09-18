@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8051 单片机实训 · 电路图播放器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #10131a;
+    color: #e8ecf3;
+    display: flex; flex-direction: column;
+  }
+  header {
+    padding: 10px 18px;
+    background: #171c26;
+    border-bottom: 1px solid #2a3242;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: 1px; }
+  header span { font-size: 12px; color: #8b95a7; }
+  main { flex: 1; display: flex; min-height: 0; }
+  .panel {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    border-right: 1px solid #2a3242;
+  }
+  .panel:last-child { border-right: none; }
+  .p-head {
+    padding: 8px 12px; background: #1a2130; font-size: 13px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .p-head .label { color: #9fb3d9; }
+  .p-head .name {
+    flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; color: #cfe0ff; font-weight: 400; font-size: 12px;
+  }
+  .p-head .loading { color: #ffb86b; font-size: 11px; font-weight: 400; }
+  .stage {
+    flex: 1; min-height: 0; background: #0b0e14; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stage img {
+    max-width: 96%; max-height: 96%; object-fit: contain;
+    border-radius: 6px; box-shadow: 0 4px 24px rgba(0,0,0,.45);
+    background: #fff;
+    transition: opacity .25s ease;
+  }
+  .stage img.hidden { opacity: 0; }
+  .stage .hint { color: #5a6579; font-size: 13px; }
+  .p-foot {
+    padding: 10px 12px; background: #171c26; border-top: 1px solid #2a3242;
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+  }
+  button {
+    font-family: inherit; font-size: 13px; padding: 7px 22px; border-radius: 6px;
+    border: 1px solid #3a465e; background: #232c3d; color: #dfe7f5; cursor: pointer;
+    transition: background .15s, transform .05s;
+  }
+  button:hover { background: #2e3a52; }
+  button:active { transform: scale(.97); }
+  button.play { background: #1f7a4d; border-color: #2a9d66; }
+  button.play:hover { background: #26915b; }
+  button.pause { background: #8a5a1e; border-color: #b57a28; }
+  button.pause:hover { background: #a06a24; }
+  .p-foot .meta { font-size: 11px; color: #76819a; }
+  .badge {
+    font-size: 11px; color: #8b95a7; background: #202838;
+    border-radius: 10px; padding: 2px 8px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>8051 单片机实训 · 电路图播放器</h1>
+  <span id="total">共 62 张</span>
+  <span class="badge">两个区域可独立播放</span>
+</header>
+<main>
+  <section class="panel" id="panelA">
+    <div class="p-head">
+      <span class="label">区域 A</span>
+      <span class="name" id="nameA">—</span>
+      <span class="loading" id="loadA" style="display:none">加载中…</span>
+    </div>
+    <div class="stage" id="stageA">
+      <img id="imgA" alt="">
+      <span class="hint" id="hintA">点击“开始”随机播放</span>
+    </div>
+    <div class="p-foot">
+      <button class="play" id="startA">开始</button>
+      <button class="pause" id="pauseA">暂停</button>
+      <span class="meta" id="metaA">0/0</span>
+    </div>
+  </section>
+  <section class="panel" id="panelB">
+    <div class="p-head">
+      <span class="label">区域 B</span>
+      <span class="name" id="nameB">—</span>
+      <span class="loading" id="loadB" style="display:none">加载中…</span>
+    </div>
+    <div class="stage" id="stageB">
+      <img id="imgB" alt="">
+      <span class="hint" id="hintB">点击“开始”随机播放</span>
+    </div>
+    <div class="p-foot">
+      <button class="play" id="startB">开始</button>
+      <button class="pause" id="pauseB">暂停</button>
+      <span class="meta" id="metaB">0/0</span>
+    </div>
+  </section>
+</main>
+<script>
+const IMAGES = ["chengxuyuan_imgs/01_闪烁的LED.webp", "chengxuyuan_imgs/02_从左到右的流水灯.webp", "chengxuyuan_imgs/03_8_只LED_左右来回点亮.webp", "chengxuyuan_imgs/04_花样流水灯.webp", "chengxuyuan_imgs/05_LED_模拟交通灯.webp", "chengxuyuan_imgs/06_单只数码管循环显示0~9.webp", "chengxuyuan_imgs/07_8_只数码管滚动显示单个数字.webp", "chengxuyuan_imgs/08_8_只数码管动态显示多个不同字符.webp", "chengxuyuan_imgs/09_8_只数码管闪烁显示数字串.webp", "chengxuyuan_imgs/10_8_只数码管滚动显示数字串.webp", "chengxuyuan_imgs/11_K1-K4_控制LED_移位.webp", "chengxuyuan_imgs/12_K1-K4_按键状态显示.webp", "chengxuyuan_imgs/13_K1-K4_分组控制LED.webp", "chengxuyuan_imgs/14_K1-K4_控制数码管移位显示.webp", "chengxuyuan_imgs/15_K1-K4_控制数码管加减演示.webp", "chengxuyuan_imgs/16_4X4_矩阵键盘控制条形LED_显示.webp", "chengxuyuan_imgs/17_数码管显示4X4_矩阵键盘按键号.webp", "chengxuyuan_imgs/18_开关控制LED.webp", "chengxuyuan_imgs/19_继电器控制照明设备.webp", "chengxuyuan_imgs/20_数码管显示拨码开关编码.webp", "chengxuyuan_imgs/21_开关控制报警器.webp", "chengxuyuan_imgs/22_按键发音.webp", "chengxuyuan_imgs/23_播放音乐.webp", "chengxuyuan_imgs/24_INT0_中断计数.webp", "chengxuyuan_imgs/25_外部INT0_中断控制LED.webp", "chengxuyuan_imgs/26_INT0_及INT1_中断计数.webp", "chengxuyuan_imgs/27_定时器控制单只LED.webp", "chengxuyuan_imgs/28_TIMER0_控制流水灯.webp", "chengxuyuan_imgs/29_定时器控制4_个LED_滚动闪烁.webp", "chengxuyuan_imgs/30_T0_控制LED_实现二进制计数.webp", "chengxuyuan_imgs/31_TIMER0_与TIMER1_控制条形LED.webp", "chengxuyuan_imgs/32_10s_的秒表.webp", "chengxuyuan_imgs/33_用计数器中断实现100_以内的按键计数.webp", "chengxuyuan_imgs/34_100_000s_以内的计时程序.webp", "chengxuyuan_imgs/35_定时器控制数码管动态显示.webp", "chengxuyuan_imgs/36_8X8LED_点阵显示数字.webp", "chengxuyuan_imgs/37_按键控制8X8LED_点阵屏显示图形.webp", "chengxuyuan_imgs/38_用定时器设计的门铃.webp", "chengxuyuan_imgs/39_演奏音阶.webp", "chengxuyuan_imgs/40_按键控制定时器选播多段音乐.webp", "chengxuyuan_imgs/41_定时器控制交通指示灯.webp", "chengxuyuan_imgs/42_报警与旋转灯.webp", "chengxuyuan_imgs/43_串行数据转换为并行数据.webp", "chengxuyuan_imgs/44_并行数据转换为串行数据.webp", "chengxuyuan_imgs/45_甲机通过串口控制乙机LED.webp", "chengxuyuan_imgs/46_单片机之间双向通信.webp", "chengxuyuan_imgs/47_单片机向主机发送字符串.webp", "chengxuyuan_imgs/48_单片机与PC_通信.webp", "chengxuyuan_imgs/01_74LS138_译码器应用.webp", "chengxuyuan_imgs/02_74HC154_译码器应用.webp", "chengxuyuan_imgs/03_74HC595_串入并出芯片应用.webp", "chengxuyuan_imgs/04_74LS148_扩展中断.webp", "chengxuyuan_imgs/05_I2C-24C04_与蜂鸣器.webp", "chengxuyuan_imgs/06_24C04_与数码管.webp", "chengxuyuan_imgs/07_用6264_扩展内存.webp", "chengxuyuan_imgs/08_用8255_实现接口扩展（仿真未成功）.webp", "chengxuyuan_imgs/09_555_定时器实验.webp", "chengxuyuan_imgs/10_BCD_译码数码管显示数字.webp", "chengxuyuan_imgs/11_MAX7221_控制数码管动态显示.webp", "chengxuyuan_imgs/12_LCD1602_字符液晶滚动演示程序.webp", "chengxuyuan_imgs/19_用ADC0808_控制PWM_输出.webp", "chengxuyuan_imgs/20_ADC0809_数模转换与显示.webp"];
+const TOTAL = IMAGES.length;
+document.getElementById('total').textContent = '共 ' + TOTAL + ' 张';
+
+function makePanel(prefix) {
+  const img = document.getElementById('img' + prefix);
+  const hint = document.getElementById('hint' + prefix);
+  const nameEl = document.getElementById('name' + prefix);
+  const metaEl = document.getElementById('meta' + prefix);
+  const loadEl = document.getElementById('load' + prefix);
+  const startBtn = document.getElementById('start' + prefix);
+  const pauseBtn = document.getElementById('pause' + prefix);
+  let timer = null;
+  let current = null;
+  let played = 0;
+  let busy = false; // 正在加载图片时置 true，防止下一张覆盖导致空白
+
+  function show(i) {
+    if (busy) return; // 上一张还没加载完，本次切换先跳过（不会跳图，只是延后）
+    busy = true;
+    current = i;
+    played++;
+    nameEl.textContent = IMAGES[i];
+    metaEl.textContent = played + '/' + TOTAL;
+    if (hint) hint.style.display = 'none';
+    if (loadEl) loadEl.style.display = 'inline';
+    // 先预加载，加载完成才真正显示，旧图保留到新图就绪
+    const p = new Image();
+    p.onload = function () {
+      img.src = p.src; // 已入缓存，立即显示
+      img.classList.remove('hidden');
+      busy = false;
+      if (loadEl) loadEl.style.display = 'none';
+    };
+    p.onerror = function () { // 图片损坏或不存在 → 自动换下一张
+      busy = false;
+      if (loadEl) loadEl.style.display = 'none';
+      if (timer) show(randomPick());
+    };
+    p.src = IMAGES[i];
+  }
+
+  function randomPick() {
+    let i = Math.floor(Math.random() * TOTAL);
+    if (TOTAL > 1 && i === current) i = (i + 1) % TOTAL;
+    return i;
+  }
+
+  function start() {
+    if (timer) return;
+    show(randomPick());
+    timer = setInterval(function () { show(randomPick()); }, 3000);
+    startBtn.disabled = true;
+  }
+
+  function pause() {
+    if (!timer) return;
+    clearInterval(timer);
+    timer = null;
+    startBtn.disabled = false;
+  }
+
+  startBtn.addEventListener('click', start);
+  pauseBtn.addEventListener('click', pause);
+  img.addEventListener('click', function () { if (timer) show(randomPick()); });
+}
+
+makePanel('A');
+makePanel('B');
+</script>
+</body>
+</html>
