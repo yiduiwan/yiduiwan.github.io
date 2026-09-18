@@ -38,7 +38,7 @@
   }
   .p-head .loading { color: #ffb86b; font-size: 11px; font-weight: 400; }
   .stage {
-    flex: 3; min-height: 0; background: #0b0e14; position: relative;
+    flex: 2; min-height: 0; background: #0b0e14; position: relative;
     display: flex; align-items: center; justify-content: center;
   }
   .stage img {
@@ -50,8 +50,8 @@
   .stage img.hidden { opacity: 0; }
   .stage .hint { color: #5a6579; font-size: 13px; }
   .codebox {
-    flex: 2; min-height: 0; display: flex; flex-direction: column;
-    border-top: 1px solid #2a3242; background: #0a0f0c;
+    flex: 3; min-height: 0; display: flex; flex-direction: column;
+    border-bottom: 1px solid #2a3242; background: #0a0f0c;
   }
   .code-head {
     padding: 5px 12px; font-size: 11px; color: #8b95a7;
@@ -98,13 +98,13 @@
       <span class="name" id="nameA">—</span>
       <span class="loading" id="loadA" style="display:none">加载中…</span>
     </div>
-    <div class="stage" id="stageA">
-      <img id="imgA" alt="">
-      <span class="hint" id="hintA">点击“开始”随机播放</span>
-    </div>
     <div class="codebox">
       <div class="code-head">程序代码</div>
       <pre id="codeA"></pre>
+    </div>
+    <div class="stage" id="stageA">
+      <img id="imgA" alt="">
+      <span class="hint" id="hintA">点击“开始”随机播放</span>
     </div>
     <div class="p-foot">
       <button class="play" id="startA">开始</button>
@@ -118,13 +118,13 @@
       <span class="name" id="nameB">—</span>
       <span class="loading" id="loadB" style="display:none">加载中…</span>
     </div>
-    <div class="stage" id="stageB">
-      <img id="imgB" alt="">
-      <span class="hint" id="hintB">点击“开始”随机播放</span>
-    </div>
     <div class="codebox">
       <div class="code-head">程序代码</div>
       <pre id="codeB"></pre>
+    </div>
+    <div class="stage" id="stageB">
+      <img id="imgB" alt="">
+      <span class="hint" id="hintB">点击“开始”随机播放</span>
     </div>
     <div class="p-foot">
       <button class="play" id="startB">开始</button>
