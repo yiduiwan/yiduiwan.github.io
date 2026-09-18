@@ -147,36 +147,70 @@ function makePanel(prefix) {
   const loadEl = document.getElementById('load' + prefix);
   const startBtn = document.getElementById('start' + prefix);
   const pauseBtn = document.getElementById('pause' + prefix);
+  const PROG_MS = 4000; // 先显示程序的时间
+  const IMG_MS = 6000;  // 再显示对应电路图的时间
   let timer = null;
   let current = null;
   let played = 0;
-  let busy = false; // 正在加载图片时置 true，防止下一张覆盖导致空白
+  let running = false;
+  let imgPhase = false; // 是否已进入电路图阶段
+  let pre = null;
+  let preOk = false;
+  let preFailed = false;
+
+  function clearPhase() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
 
   function show(i) {
-    if (busy) return; // 上一张还没加载完，本次切换先跳过（不会跳图，只是延后）
-    busy = true;
+    if (!running) return;
+    clearPhase();
     current = i;
     played++;
     const d = DATA[i];
     nameEl.textContent = d.name;
     metaEl.textContent = played + '/' + TOTAL;
-    codeEl.textContent = d.code; // 程序与电路图同步更新
+    codeEl.textContent = d.code; // 先显示程序
+    imgPhase = false;
+    // 阶段1：隐藏电路图，只显示程序
+    img.classList.add('hidden');
+    img.removeAttribute('src');
+    if (hint) { hint.style.display = 'block'; hint.textContent = '程序已显示，稍后展示电路图…'; }
+    if (loadEl) loadEl.style.display = 'none';
+    // 后台预加载对应电路图
+    pre = new Image();
+    preOk = false;
+    preFailed = false;
+    pre.onload = function () {
+      preOk = true;
+      if (imgPhase) displayImg(); // 若已进入图阶段且图片刚好加载完
+    };
+    pre.onerror = function () {
+      preFailed = true;
+      if (imgPhase) { // 图阶段发现坏图，跳过该图直接下一项
+        clearPhase();
+        show(randomPick());
+      }
+    };
+    pre.src = d.img;
+    timer = setTimeout(function () { // 程序阶段结束，进入图阶段
+      timer = null;
+      imgPhase = true;
+      if (preOk) displayImg();
+      else if (preFailed) show(randomPick());
+      else if (loadEl) loadEl.style.display = 'inline'; // 等待加载完成
+    }, PROG_MS);
+  }
+
+  function displayImg() {
+    img.src = pre.src;
+    img.classList.remove('hidden');
     if (hint) hint.style.display = 'none';
-    if (loadEl) loadEl.style.display = 'inline';
-    // 先预加载图片，加载完成才真正显示，旧图保留到新图就绪
-    const p = new Image();
-    p.onload = function () {
-      img.src = p.src; // 已入缓存，立即显示
-      img.classList.remove('hidden');
-      busy = false;
-      if (loadEl) loadEl.style.display = 'none';
-    };
-    p.onerror = function () { // 图片损坏或不存在 → 自动换下一张
-      busy = false;
-      if (loadEl) loadEl.style.display = 'none';
-      if (timer) show(randomPick());
-    };
-    p.src = d.img;
+    if (loadEl) loadEl.style.display = 'none';
+    timer = setTimeout(function () { // 图阶段结束，随机下一项（从头：先程序）
+      timer = null;
+      show(randomPick());
+    }, IMG_MS);
   }
 
   function randomPick() {
@@ -186,22 +220,22 @@ function makePanel(prefix) {
   }
 
   function start() {
-    if (timer) return;
-    show(randomPick());
-    timer = setInterval(function () { show(randomPick()); }, 4000);
+    if (running) return;
+    running = true;
     startBtn.disabled = true;
+    show(randomPick());
   }
 
   function pause() {
-    if (!timer) return;
-    clearInterval(timer);
-    timer = null;
+    if (!running) return;
+    running = false;
+    clearPhase();
     startBtn.disabled = false;
   }
 
   startBtn.addEventListener('click', start);
   pauseBtn.addEventListener('click', pause);
-  img.addEventListener('click', function () { if (timer) show(randomPick()); });
+  img.addEventListener('click', function () { if (running) show(randomPick()); });
 }
 
 makePanel('A');
