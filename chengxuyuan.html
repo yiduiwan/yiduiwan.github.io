@@ -147,8 +147,8 @@ function makePanel(prefix) {
   const loadEl = document.getElementById('load' + prefix);
   const startBtn = document.getElementById('start' + prefix);
   const pauseBtn = document.getElementById('pause' + prefix);
-  const PROG_MS = 4000; // 先显示程序的时间
-  const IMG_MS = 6000;  // 再显示对应电路图的时间
+  const PROG_MS = 20000; // 先显示程序的时间
+  const IMG_MS = 20000; // 再显示对应电路图的时间
   let timer = null;
   let current = null;
   let played = 0;
